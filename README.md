@@ -1,123 +1,98 @@
-# 介绍
+# Xray (VLESS + Reality) Docker 镜像
 
-最好用的 Xray 一键安装脚本 & 管理脚本
+本仓库是 [233boy/Xray](https://github.com/233boy/Xray) 的 **Docker 化维护分支**：不再使用整机的 systemd 安装脚本，改为一个**自包含的 Docker 镜像**来部署和维护 233boy 风格的 **VLESS + Reality** 服务端——无需自己的域名和证书，TLS 握手直接"借用"真实大网站的证书，抗主动探测能力最强。
 
-# 特点
+> 上游原脚本的使用文档见 [old_readme.md](old_readme.md)。
 
-- 快速安装
-- 无敌好用
-- 零学习成本
-- 自动化 TLS
-- 简化所有流程
-- 屏蔽 BT
-- 屏蔽中国 IP
-- 使用 API 操作
-- 兼容 Xray 命令
-- 强大的快捷参数
-- 支持所有常用协议
-- 一键添加 VLESS-REALITY (默认)
-- 一键添加 Shadowsocks 2022
-- 一键添加 VMess-(TCP/mKCP)
-- 一键添加 VMess-(WS/gRPC)-TLS
-- 一键添加 VLESS-(WS/gRPC/XHTTP)-TLS
-- 一键添加 Trojan-(WS/gRPC)-TLS
-- 一键添加 VMess-(TCP/mKCP) 动态端口
-- 一键启用 BBR
-- 一键更改伪装网站
-- 一键更改 (端口/UUID/密码/域名/路径/加密方式/SNI/动态端口/等...)
-- 还有更多...
+## 镜像特性
 
-# 设计理念
+- Xray-core v26.3.27 静态二进制，多阶段构建 + SHA256 校验，支持 amd64 / arm64
+- 复刻 233boy 脚本生成的 VLESS-REALITY 配置：`flow=xtls-rprx-vision`、屏蔽 BT / 国内 IP / 内网 IP
+- UUID / x25519 密钥对首次启动自动生成并持久化到数据卷，重启 / 重建容器不变
+- 内置 `info` 命令，随时查看连接信息与分享链接
+- 运行时零依赖：宿主机不需要安装任何东西（104MB，全部打包在镜像里）
 
-设计理念为：**高效率，超快速，极易用**
+## 快速开始
 
-脚本基于作者的自身使用需求，以 **多配置同时运行** 为核心设计
+### 方式一：直接用仓库里的镜像包（免构建）
 
-并且专门优化了，添加、更改、查看、删除、这四项常用功能
-
-你只需要一条命令即可完成 添加、更改、查看、删除、等操作
-
-例如，添加一个配置仅需不到 1 秒！瞬间完成添加！其他操作亦是如此！
-
-脚本的参数非常高效率并且超级易用，请掌握参数的使用
-
-# 文档
-
-安装及使用：https://233boy.com/xray/xray-script/
-
-# 帮助
-
-使用：`xray help`
-
+```bash
+docker load < xray-reality-image.tar.gz
+docker run -d --name xray --restart unless-stopped --network host -v xray-data:/etc/xray xray-reality
 ```
-Xray script v1.21 by 233boy
-Usage: xray [options]... [args]...
 
-基本:
-   v, version                                      显示当前版本
-   ip                                              返回当前主机的 IP
-   pbk                                             同等于 xray x25519
-   get-port                                        返回一个可用的端口
-   ss2022                                          返回一个可用于 Shadowsocks 2022 的密码
+> 仓库里的 `xray-reality-image.tar.gz` 是手工导出的快照（2026-10-09, Xray v26.3.27），可能落后于 Dockerfile；要最新请用方式二自己构建。
 
-一般:
-   a, add [protocol] [args... | auto]              添加配置
-   c, change [name] [option] [args... | auto]      更改配置
-   d, del [name]                                   删除配置**
-   i, info [name]                                  查看配置
-   qr [name]                                       二维码信息
-   url [name]                                      URL 信息
-   log                                             查看日志
-   logerr                                          查看错误日志
+### 方式二：自己构建
 
-更改:
-   dp, dynamicport [name] [start | auto] [end]     更改动态端口
-   full [name] [...]                               更改多个参数
-   id [name] [uuid | auto]                         更改 UUID
-   host [name] [domain]                            更改域名
-   port [name] [port | auto]                       更改端口
-   path [name] [path | auto]                       更改路径
-   passwd [name] [password | auto]                 更改密码
-   key [name] [Private key | atuo] [Public key]    更改密钥
-   type [name] [type | auto]                       更改伪装类型
-   method [name] [method | auto]                   更改加密方式
-   sni [name] [ ip | domain]                       更改 serverName
-   seed [name] [seed | auto]                       更改 mKCP seed
-   new [name] [...]                                更改协议
-   web [name] [domain]                             更改伪装网站
-
-进阶:
-   dns [...]                                       设置 DNS
-   dd, ddel [name...]                              删除多个配置**
-   fix [name]                                      修复一个配置
-   fix-all                                         修复全部配置
-   fix-caddyfile                                   修复 Caddyfile
-   fix-config.json                                 修复 config.json
-
-管理:
-   un, uninstall                                   卸载
-   u, update [core | sh | dat | caddy] [ver]       更新
-   U, update.sh                                    更新脚本
-   s, status                                       运行状态
-   start, stop, restart [caddy]                    启动, 停止, 重启
-   t, test                                         测试运行
-   reinstall                                       重装脚本
-
-测试:
-   client [name]                                   显示用于客户端 JSON, 仅供参考
-   debug [name]                                    显示一些 debug 信息, 仅供参考
-   gen [...]                                       同等于 add, 但只显示 JSON 内容, 不创建文件, 测试使用
-   genc [name]                                     显示用于客户端部分 JSON, 仅供参考
-   no-auto-tls [...]                               同等于 add, 但禁止自动配置 TLS, 可用于 *TLS 相关协议
-   xapi [...]                                      同等于 xray api, 但 API 后端使用当前运行的 Xray 服务
-
-其他:
-   bbr                                             启用 BBR, 如果支持
-   bin [...]                                       运行 Xray 命令, 例如: xray bin help
-   api, x25519, tls, run, uuid  [...]              兼容 Xray 命令
-   h, help                                         显示此帮助界面
-
-谨慎使用 del, ddel, 此选项会直接删除配置; 无需确认
-反馈问题) https://github.com/233boy/xray/issues
-文档(doc) https://233boy.com/xray/xray-script/
+```bash
+docker build -t xray-reality .
+# 国内加速:  docker build --build-arg GITHUB_MIRROR=https://ghfast.top/ -t xray-reality .
+# 固定版本:  docker build --build-arg XRAY_VERSION=v26.3.27 -t xray-reality .
 ```
+
+## 查看连接信息 / 分享链接
+
+```bash
+docker exec xray info     # 随时打印 地址/端口/UUID/SNI/公钥/分享链接
+docker logs xray          # 启动时也会自动打印一次
+```
+
+用 v2rayN / v2rayNG / Shadowrocket / Clash.Meta 等客户端导入分享链接即可。
+
+## 环境变量（均有默认值，可不填）
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `XRAY_PORT` | `443` | 监听端口 |
+| `XRAY_SNI` | `www.paypal.com` | 伪装域名（233boy 候选: amazon/ebay/paypal/aws） |
+| `XRAY_UUID` | 随机生成并持久化 | 用户 ID |
+| `XRAY_PRIVATE_KEY` / `XRAY_PUBLIC_KEY` | 随机生成并持久化 | Reality 密钥对，只给私钥会自动推导公钥 |
+| `XRAY_ADDR` | 自动探测公网 IP | 分享链接里拼的服务器地址 |
+| `XRAY_LOG_LEVEL` | `warning` | 日志级别 |
+| `XRAY_ACCESS_LOG` | `/dev/null` | 访问日志，改 `/dev/stdout` 可在 docker logs 看连接记录 |
+| `XRAY_BAN_BT` / `XRAY_BAN_CN` / `XRAY_BAN_PRIVATE` | `true` | 屏蔽 BT / 国内 IP / 内网 IP |
+
+## 日常维护
+
+```bash
+docker stop xray        # 停止
+docker start xray       # 启动
+docker restart xray     # 重启
+docker rm -f xray       # 删除容器 (xray-data 卷保留, 凭据不丢)
+docker logs -f xray     # 跟踪日志
+```
+
+升级 Xray 版本：改 Dockerfile 里的 `XRAY_VERSION`（或 `latest`）→ `docker build` → `docker rm -f xray` → 重新 `docker run`。数据卷不动，客户端无感知。
+
+## 备份与迁移
+
+镜像和凭据各导一份：
+
+```bash
+docker save xray-reality | gzip > xray-reality-image.tar.gz
+tar -czf xray-data-backup.tar.gz -C /var/lib/docker/volumes/xray-data/_data .
+```
+
+新机器恢复：
+
+```bash
+docker load < xray-reality-image.tar.gz
+mkdir -p /var/lib/docker/volumes/xray-data/_data
+tar -xzf xray-data-backup.tar.gz -C /var/lib/docker/volumes/xray-data/_data
+docker run -d --name xray --restart unless-stopped --network host -v xray-data:/etc/xray xray-reality
+```
+
+UUID / 公钥 / SNI 原样迁移，客户端零改动。**注意**：`xray-data-backup.tar.gz` 含私钥，不要提交到仓库或放到不安全的地方（已在 .gitignore 中排除）。
+
+## 与上游脚本 (old_readme.md) 的差异
+
+| 上游 233boy 脚本 | 本镜像 |
+|---|---|
+| systemd 服务管理 | Docker 容器 + `--restart unless-stopped` |
+| 交互式 `xray` 管理命令 | `docker exec xray info` |
+| 一键 bbr 等内核调优 | 宿主机自行执行 `sysctl` |
+| 安装时随机选 SNI | 固定默认 `www.paypal.com`（环境变量可改） |
+| 整机安装，重装麻烦 | 镜像零依赖，`docker save/load` 随处迁移 |
+
+配置生成逻辑复刻自上游 `src/core.sh` 的 VLESS-REALITY 分支；上游更新后，同步成本就是改一个版本号或模板。
